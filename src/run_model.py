@@ -5,9 +5,10 @@ import torch.utils.data
 import numpy as np
 from tqdm import tqdm
 from transformers import default_data_collator
+import os
 
 
-from utils import load_model, load_data, parse_args, preprocess_function
+from utils import load_model, load_data, parse_args_run, preprocess_function
 
 def generate_predictions(model, tokenizer, test_loader, device, max_gen_length: int, min_gen_length: int):
     model.eval()
@@ -28,7 +29,7 @@ def generate_predictions(model, tokenizer, test_loader, device, max_gen_length: 
 
 def main():
 
-    args = parse_args()
+    args = parse_args_run()
 
     # Load model and tokenizer
     model, tokenizer = load_model(args.model_path, args.cache_dir, args.max_input_length)
@@ -42,7 +43,7 @@ def main():
         num_proc=1,
         load_from_cache_file=False,
         remove_columns=["inputs", "label"],
-        desc="Running tokenizer on dataset")
+        desc="Running tokenizer on test dataset")
     
     test_loader = torch.utils.data.DataLoader(test_inputs, batch_size=args.batch_size, collate_fn=default_data_collator)
 
@@ -50,17 +51,16 @@ def main():
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     predictions = generate_predictions(model, tokenizer, test_loader, device, args.max_gen_length, args.min_gen_length)
 
+    # Write predictions to file
+    # create folder if it doesn't exist
     try:
-        # Save predictions to file
         with open(args.output_file, "w") as f:
             json.dump(predictions, f)
-            print(f"Predictions saved to {args.output_file}")
-
-    except:
-        with open("test_predictions.json", "w") as f:
-            json.dump(predictions, f)
-            print(f"Predictions saved to test_predictions.json")
-
-            
+    except FileNotFoundError:
+        os.makedirs(os.path.dirname(args.output_file))
+        with open(args.output_file, "w") as f:
+            json.dump(predictions, f)   
+    print(f"Predictions saved to {args.output_file}")
+    
 if __name__ == "__main__":
     main()

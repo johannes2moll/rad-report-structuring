@@ -2,11 +2,12 @@
 
 # Define the parameters for the inference script
 MODEL_PATH="jomoll/biomed-roberta"
+MODEL_NAME=$(echo "$MODEL_PATH" | awk -F'/' '{print $2}')
 CACHE_DIR=".cache"
 TEST_DATA_PATH="data/"
-OUTPUT_FILE="${MODEL_PATH}test_results.json"
+OUTPUT_FILE="output/${MODEL_NAME}/test_results.json"
 MAX_LENGTH=512
-BATCH_SIZE=64
+BATCH_SIZE=32
 MAX_GEN_LENGTH=512
 MIN_GEN_LENGTH=120
 

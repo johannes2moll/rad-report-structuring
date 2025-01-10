@@ -6,12 +6,13 @@ import torch.utils.data
 from datasets import Dataset
 import numpy as np
 from tqdm import tqdm
+import re
 
 import constants
 
 def load_model(model_name: str, cache_dir: str, model_max_length: int):
     if "bert" in model_name:
-        model = transformers.EncoderDecoderModel.from_pretrained(model_name)
+        model = transformers.EncoderDecoderModel.from_pretrained(model_name, trust_remote_code=True)
     elif "t5" in model_name:
         model = transformers.AutoModelForSeq2SeqLM.from_pretrained(model_name, device_map="auto", trust_remote_code=True)
     else: 
@@ -24,9 +25,9 @@ def load_model(model_name: str, cache_dir: str, model_max_length: int):
 def load_data(test_data_path):
     """Preprocess the test data for inference."""
     
-    with open(test_data_path+"test_original.tok", "r") as f_o , open(test_data_path+"test_structured.tok", "r") as f_s:
-        lines_original = f_o.readlines()
-        lines_structured = f_s.readlines()
+    with open(test_data_path+"test_unstructured.json", "r") as f_o , open(test_data_path+"test_structured.json", "r") as f_s:
+        lines_original = json.load(f_o)
+        lines_structured = json.load(f_s)
         assert len(lines_original) == len(lines_structured)
 
         list_original = []
@@ -65,7 +66,6 @@ def preprocess_function(examples, tokenizer, max_len: int):
         return_tensors="pt",
     )
 
-    # extract labels['input_ids']
     labels = labels["input_ids"]
     labels[
         labels == tokenizer.pad_token_id
@@ -93,7 +93,7 @@ def generate_predictions(model, tokenizer, test_loader, device, max_gen_length: 
 
 
 
-def parse_args():
+def parse_args_run():
 
     parser = argparse.ArgumentParser()
     parser.add_argument("--model_path", type=str, required=True, help="Path to the trained model")
@@ -108,3 +108,58 @@ def parse_args():
 
     args = parser.parse_args()
     return args
+
+def parse_args_calc():
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--pred_file", type=str, required=True, help="Path to the prediction file")
+    parser.add_argument("--ref_file", type=str, required=True, help="Path to the reference file")
+    parser.add_argument("--output_file", type=str, required=True, help="File to save the results")
+    args = parser.parse_args()
+    return args
+
+def extract_sections(report):
+    """Extracts Findings and Impression sections from a radiology report."""
+    # Use case-insensitive regex to locate sections
+    findings_match = re.search(r'(?i)findings\s*:', report)
+    impression_match = re.search(r'(?i)impression\s*:', report)
+    
+    # Ensure both sections exist
+    if not findings_match or not impression_match:
+        return None, None
+    
+    # Extract Findings section
+    findings_start = findings_match.end()
+    findings_end = impression_match.start()
+    findings = report[findings_start:findings_end].strip()
+    
+    # Extract Impression section
+    impression_start = impression_match.end()
+    impression = report[impression_start:].strip()
+    
+    return findings, impression
+
+def get_lists(prediction_file, reference_file):
+    with open(prediction_file, "r") as f:
+        predictions = json.load(f)
+    with open(reference_file, "r") as f:
+        references = json.load(f)
+    assert len(predictions) == len(references)
+
+    ref_findings_list = []
+    ref_impression_list = []
+    pred_findings_list = []
+    pred_impression_list = []
+
+    for idx, ref in enumerate(references):
+        # Extract Findings and Impression sections from original report
+        ref_findings, ref_impression = extract_sections(ref)
+        # Extract Findings and Impression sections from generated report
+        pred_findings, pred_impression = extract_sections(predictions[idx])
+        
+        # Append to lists
+        ref_findings_list.append(ref_findings)
+        ref_impression_list.append(ref_impression)
+        pred_findings_list.append(pred_findings)
+        pred_impression_list.append(pred_impression)
+    
+    return ref_findings_list, ref_impression_list, pred_findings_list, pred_impression_list
