@@ -1,29 +1,7 @@
 #!/bin/bash
-export CUDA_DEVICE_MAX_CONNECTIONS=1
-export NCCL_PROTO=simple
-export FI_EFA_FORK_SAFE=1
-export FI_LOG_LEVEL=1
-export FI_EFA_USE_DEVICE_RDMA=1
-export PYTHONFAULTHANDLER=1
-export CUDA_LAUNCH_BLOCKING=0
-export OMPI_MCA_mtl_base_verbose=1
-export FI_EFA_ENABLE_SupupHM_TRANSFER=0
-export FI_PROVIDER=efa
-export FI_EFA_TX_MIN_CREDITS=64
-export NCCL_TREE_THRESHOLD=0
-export SRUN_CPUS_PER_TASK=${SLURM_CPUS_PER_TASK}
 module load cuda/12.6.1 
 
 GPUS_PER_NODE=$(nvidia-smi -L | wc -l)
-MASTER_ADDR=$(scontrol show hostnames "$SLURM_JOB_NODELIST" | head -n 1)
-MASTER_ADDR=$(nslookup "$MASTER_ADDR" | grep -oP '(?<=Address: ).*') # Get IP for hostname
-
-echo "GPUS_PER_NODE: ${GPUS_PER_NODE}"
-echo "MASTER_ADDR: ${MASTER_ADDR}"
-MASTER_PORT=$((29500 + SLURM_JOB_ID % 1000))
-export MASTER_PORT
-echo "MASTER_PORT: ${MASTER_PORT}"
-
 DISTRIBUTED_ARGS="
     --nproc_per_node $GPUS_PER_NODE
     --rdzv_backend static

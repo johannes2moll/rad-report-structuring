@@ -4,42 +4,27 @@ import torch.utils.data
 import numpy as np
 from tqdm import tqdm
 import os
-
-
-from utils import load_model, parse_args_run, load_and_preprocess_dataset, get_data_collator
-
-def generate_predictions(model, tokenizer, test_loader, device, max_gen_length: int, min_gen_length: int):
-    model.eval()
-    model.to(device)
-    
-    predictions = []
-    # Initialize tqdm progress bar, setting the total number of batches
-    progress_bar = tqdm(test_loader, desc="Generating predictions", unit="batch")
-
-    for batch in progress_bar:
-        input_ids = batch['input_ids'].to(device)
-        with torch.no_grad():
-            generated_ids = model.generate(input_ids, max_new_tokens=max_gen_length, min_new_tokens= min_gen_length, decoder_start_token_id=model.config.decoder_start_token_id, num_beams=5, early_stopping=True)
-        decoded_preds = tokenizer.batch_decode(generated_ids, skip_special_tokens=True)
-        predictions.extend(decoded_preds)
-    return predictions
+from utils import parse_args_run_llm, load_llm_model, load_and_preprocess_dataset_llm, generate_predictions, get_data_collator
 
 
 def main():
-
-    args = parse_args_run()
+    
+    args = parse_args_run_llm()
 
     # Load model and tokenizer
-    model, tokenizer = load_model(args.model_path, args.cache_dir, args.max_input_length)
-    
+    model, tokenizer = load_llm_model(args.model_path, args.cache_dir, args.max_input_length)
+
     # Create DataLoader for batch processing
-    test_dataset = load_and_preprocess_dataset(args.data_path, tokenizer, split="test", max_len=args.max_input_length)
+    test_dataset = load_and_preprocess_dataset_llm(args.data_path, tokenizer, split="test", max_len=args.max_input_length, case_id=args.case_id)
     test_dataset=test_dataset.remove_columns(['original_report', 'structured_report', 'findings_section', 'impression_section', 'history_section', 'technique_section', 'comparison_section', 'exam_type_section', 'image_paths', 'id', 'labels'])
     test_loader = torch.utils.data.DataLoader(test_dataset, batch_size=args.batch_size, collate_fn=get_data_collator(tokenizer))
     
     # Generate predictions
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     predictions = generate_predictions(model, tokenizer, test_loader, device, args.max_gen_length, args.min_gen_length)
+
+    # For auto-regressive models, remove the input text from the predictions
+    predictions =[prediction.rsplit("Output:", 1)[-1].strip() for prediction in predictions]
 
     # Write predictions to file
     # create folder if it doesn't exist

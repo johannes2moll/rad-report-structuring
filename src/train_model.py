@@ -21,7 +21,6 @@ import transformers
 from transformers import (
     Seq2SeqTrainer,
     TrainerCallback,
-    DataCollatorForSeq2Seq,
 )
 from rouge_score import rouge_scorer
 scorer = rouge_scorer.RougeScorer(['rouge1', 'rouge2', 'rougeL'], use_stemmer=True)
@@ -33,6 +32,7 @@ from transformers.trainer_pt_utils import LabelSmoother
 from accelerate.utils import DistributedType
 
 import constants
+from utils import load_and_preprocess_dataset, get_data_collator
 
 IGNORE_TOKEN_ID = LabelSmoother.ignore_index
 
@@ -100,42 +100,6 @@ def safe_save_model_for_hf_trainer(trainer: transformers.Trainer, output_dir: st
         state_dict = trainer.model.state_dict()
     if trainer.args.should_save and trainer.args.local_rank == 0:
         trainer._save(constants.DIR_MODELS_TUNED+output_dir, state_dict=state_dict)
-
-def preprocess_batch(batch, tokenizer: transformers.PreTrainedTokenizer, max_len: int, system_message: str = ""):
-    """Preprocess a batch of samples."""
-    # Validate fields
-    original = batch.get("original_report", [])
-    structured = batch.get("structured_report", [])
-    if not original or not structured:
-        raise ValueError("Batch does not contain 'original_report' or 'structured_report' fields.")
-
-    # Tokenize the input and target text
-    input_text = [system_message + report for report in original]
-    inputs = tokenizer(input_text, padding="max_length", truncation=True, max_length=max_len, return_tensors="pt")
-    target_text = structured
-    labels = tokenizer(target_text, padding="max_length", truncation=True, max_length=max_len, return_tensors="pt")["input_ids"]
-    labels[labels == tokenizer.pad_token_id] = IGNORE_TOKEN_ID
-    inputs["labels"] = labels
-
-    return inputs
-
-def load_and_preprocess_dataset(data_path, tokenizer, max_len, split="train", system_message="", batch_size=16):
-    """Load and preprocess dataset in batches."""
-    # Load raw JSON data as a Hugging Face Dataset
-    raw_data = load_dataset(data_path, split=split)
-
-    # Preprocess data in batches
-    processed_data = raw_data.map(
-        lambda batch: preprocess_batch(batch, tokenizer, max_len, system_message),
-        batched=True,
-        batch_size=batch_size,
-        desc="Running tokenizer on "+split+" dataset")
-
-    return processed_data
-
-def get_data_collator(tokenizer):
-    """Return a data collator for seq2seq tasks."""
-    return DataCollatorForSeq2Seq(tokenizer=tokenizer, padding=True, label_pad_token_id=IGNORE_TOKEN_ID)
 
 def make_supervised_data_module(tokenizer, data_args, max_len):
     """Prepare datasets and collator for supervised fine-tuning."""

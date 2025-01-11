@@ -4,6 +4,17 @@ from StructEval.structeval.StructEval import StructEval
 
 def eval_findings(ref_findings_list, pred_findings_list):
     """Evaluate the findings section of the radiology reports."""
+    assert len(ref_findings_list) == len(pred_findings_list)
+    # Check pred_list for None values
+    if None in pred_findings_list:
+        # find out which index has None value
+        none_indices = [i for i, x in enumerate(pred_findings_list) if x == None]
+        print("Warning: None values found in predictions.")
+        print("None values found at indices:", none_indices)
+        # remove from both lists
+        ref_findings_list = [i for j, i in enumerate(ref_findings_list) if j not in none_indices]
+        pred_findings_list = [i for j, i in enumerate(pred_findings_list) if j not in none_indices]
+        print("Removed corresponding entry from reference and prediction lists.")
     rr = StructEval(do_radgraph=True,
                     do_green=False,
                     do_bleu=True,
@@ -16,6 +27,17 @@ def eval_findings(ref_findings_list, pred_findings_list):
 
 def eval_impression(ref_impression_list, pred_impression_list):
     """Evaluate the impression section of the radiology reports."""
+    assert len(ref_impression_list) == len(pred_impression_list)
+    # Check pred_list for None values
+    if None in pred_impression_list:
+        # find out which index has None value
+        none_indices = [i for i, x in enumerate(pred_impression_list) if x == None]
+        print("Warning: None values found in predictions.")
+        print("None values found at indices:", none_indices)
+        # remove from both lists
+        ref_impression_list = [i for j, i in enumerate(ref_impression_list) if j not in none_indices]
+        pred_impression_list = [i for j, i in enumerate(pred_impression_list) if j not in none_indices]
+        print("Removed corresponding entry from reference and prediction lists.")
     rr = StructEval(do_radgraph=True,
                     do_green=False,
                     do_bleu=True,
