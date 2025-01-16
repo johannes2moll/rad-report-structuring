@@ -4,19 +4,11 @@
 # For training, execute the corresponding bash file on a machine with a GPU.
 ####################################################################################################
 
-# Standard Library Imports
-import json
-import logging
-import os
 from dataclasses import dataclass, field
 from typing import Dict, Optional, List
 import numpy as np
-# PyTorch Imports
 import torch
 import evaluate
-from datasets import load_dataset
-
-# Hugging Face Transformers Imports
 import transformers
 from transformers import (
     Seq2SeqTrainer,
@@ -24,23 +16,19 @@ from transformers import (
 )
 from rouge_score import rouge_scorer
 scorer = rouge_scorer.RougeScorer(['rouge1', 'rouge2', 'rougeL'], use_stemmer=True)
-
 from transformers.integrations import deepspeed
 from transformers.trainer_pt_utils import LabelSmoother
-
 # Accelerate and Distributed Training
 from accelerate.utils import DistributedType
-
 import constants
-from utils import load_and_preprocess_dataset, get_data_collator
+from utils import load_and_preprocess_dataset, get_data_collator, load_model
 
 IGNORE_TOKEN_ID = LabelSmoother.ignore_index
 
 
 @dataclass
 class ModelArguments:
-    model_name_or_path: Optional[str] = field(default="StanfordAIMI/RadLLaMA-7b")
-
+    model: Optional[str] = field(default="roberta-base")
 
 @dataclass
 class DataArguments:
@@ -56,6 +44,7 @@ class DataArguments:
 @dataclass
 class TrainingArguments(transformers.TrainingArguments):
     cache_dir: Optional[str] = field(default=None)
+    output_dir: str = field(default="roberta-base")
     optim: str = field(default="adamw_torch")
     model_max_length: int = field(
         default=8192,
@@ -63,10 +52,10 @@ class TrainingArguments(transformers.TrainingArguments):
             "help": "Maximum sequence length. Sequences will be right padded (and possibly truncated)."
         },
     )
-    generation_max_length: Optional[int] = field(
+    generation_max_length: int = field(
         default=286, metadata={"help": "Maximum length of generated sequences"}
     )
-    generation_min_length: Optional[int] = field(
+    generation_min_length: int = field(
         default=120, metadata={"help": "Minimum length of generated sequences"}
     )
     use_lora: bool = False
@@ -99,7 +88,7 @@ def safe_save_model_for_hf_trainer(trainer: transformers.Trainer, output_dir: st
     else:
         state_dict = trainer.model.state_dict()
     if trainer.args.should_save and trainer.args.local_rank == 0:
-        trainer._save(constants.DIR_MODELS_TUNED+output_dir, state_dict=state_dict)
+        trainer._save(output_dir, state_dict=state_dict)
 
 def make_supervised_data_module(tokenizer, data_args, max_len):
     """Prepare datasets and collator for supervised fine-tuning."""
@@ -116,16 +105,6 @@ def make_supervised_data_module(tokenizer, data_args, max_len):
         "data_collator": data_collator,
     }
 
-def infer_model_class_and_trainable_parameters(training_args, model_name):
-    model_config = transformers.AutoConfig
-    if "bert" in model_name:
-        model_class = transformers.EncoderDecoderModel
-    elif "t5" in model_name:
-        model_class = transformers.AutoModelForSeq2SeqLM
-    else: 
-        model_class = transformers.AutoModelForCausalLM
-    tokenizer_class = transformers.AutoTokenizer
-    return model_config, model_class, tokenizer_class, training_args
 
 class EarlyStoppingCallback(TrainerCallback):
     def __init__(self, patience: int, threshold: float = 0.0):
@@ -174,54 +153,15 @@ def train():
         data_args,
         training_args,
     ) = parser.parse_args_into_dataclasses()
-   
+    training_args.output_dir = constants.DIR_MODELS_TUNED+training_args.output_dir
+
     if getattr(training_args, 'deepspeed', None):
         training_args.distributed_state.distributed_type = DistributedType.DEEPSPEED
 
     # Load model and tokenizer
-    model_config, model_class, tokenizer_class, training_args = infer_model_class_and_trainable_parameters(
-        training_args, model_args.model_name_or_path
-    )
+    model, tokenizer = load_model(constants.MODELS[model_args.model], task="train")
 
-    config = model_config.from_pretrained(
-        model_args.model_name_or_path,
-        cache_dir=training_args.cache_dir,
-    )
-    config.use_cache = False    
-
-    tokenizer = tokenizer_class.from_pretrained(
-      model_args.model_name_or_path,
-      cache_dir=training_args.cache_dir,
-      model_max_length=training_args.model_max_length,
-      padding_side="right",
-      use_fast=False,
-      trust_remote_code=True,
-    )
-
-    if model_class == transformers.EncoderDecoderModel:
-        model = model_class.from_encoder_decoder_pretrained(
-            model_args.model_name_or_path,
-            model_args.model_name_or_path,
-            config=config,
-            cache_dir=training_args.cache_dir,
-            torch_dtype=torch.bfloat16,
-            use_flash_attention_2=False
-        )
-        model.config.decoder_start_token_id = tokenizer.cls_token_id
-        model.config.pad_token_id = tokenizer.pad_token_id    
-        model.config.bos_token_id = tokenizer.cls_token_id
-        model.config.config.decoder_start_token_id = tokenizer.cls_token_id
-        model.config.encoder.decoder_start_token_id = tokenizer.cls_token_id
-        model.config.decoder.decoder_start_token_id = tokenizer.cls_token_id
-    else:
-        model = model_class.from_pretrained(
-            model_args.model_name_or_path,
-            config=config,
-            cache_dir=training_args.cache_dir,
-            torch_dtype=torch.bfloat16,
-            use_flash_attention_2=False
-        )
-
+    # Define custom eval function for early-stopping
     def compute_metrics(pred):
         labels_ids = pred.label_ids
         pred_ids = pred.predictions
@@ -251,13 +191,13 @@ def train():
     data_args=data_args,
     max_len=training_args.model_max_length,
     )
-    training_args.generate_config = transformers.GenerationConfig(decoder_start_token_id=model.config.decoder_start_token_id, max_new_tokens=training_args.generation_max_length, min_new_tokens=training_args.generation_min_length)
+    training_args.generate_config = transformers.GenerationConfig(decoder_start_token_id=model.config.decoder_start_token_id, max_length=training_args.generation_max_length, min_length=training_args.generation_min_length)
     trainer = Seq2SeqTrainer(
         model=model, tokenizer=tokenizer, args=training_args, 
         train_dataset=data_module["train_dataset"],
         eval_dataset=data_module["eval_dataset"],
         data_collator=data_module["data_collator"],
-        compute_metrics=compute_metrics,  # Your compute_metrics should return ROUGE scores
+        compute_metrics=compute_metrics,  # compute_metrics should return ROUGE scores
         callbacks=[EarlyStoppingCallback(patience=3, threshold=0.01)]  # Set patience and threshold
     )
     trainer.train(resume_from_checkpoint=False)
@@ -278,7 +218,7 @@ def train():
     safe_save_model_for_hf_trainer(trainer=trainer, output_dir=training_args.output_dir)
     
     # Optional: push to hub
-    model.push_to_hub("jomoll/roberta-base4", private=True)
+    model.push_to_hub("jomoll/"+training_args.output_dir, private=True)
 
 if __name__ == "__main__":
     torch.cuda.empty_cache()

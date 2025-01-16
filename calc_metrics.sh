@@ -1,12 +1,12 @@
 #!/bin/bash
 
-MODEL_PATH="jomoll/biomed-roberta"
-MODEL_NAME=$(echo "$MODEL_PATH" | awk -F'/' '{print $2}')
-PRED_FILE="output/${MODEL_NAME}/test_results.json"
-REF_FILE="data/test_structured.json"
-OUTPUT_FILE="output/${MODEL_NAME}/metrics.json"
+MODEL="llama-1b"  #llama-1b, llama-3b, llama-8b, llama-70b, vicuna, medalpaca-7b, medalpaca-13b, mistral-nemo, mistral-7b, phi3
+CASE_ID=1
+PRED_FILE="output/case${CASE_ID}/${MODEL}/test_predictions.json"
+REF_DATA_PATH="StanfordAIMI/srrg_findings_impression"
+OUTPUT_FILE="output/case${CASE_ID}/${MODEL}/metrics.json"
 
 python src/calc_metrics.py \
     --pred_file "$PRED_FILE" \
-    --ref_file "$REF_FILE" \
+    --ref_data_path "$REF_DATA_PATH" \
     --output_file "$OUTPUT_FILE" 

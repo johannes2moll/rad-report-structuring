@@ -1,21 +1,19 @@
 #!/bin/bash
 module load cuda/12.6.1 
 
-GPUS_PER_NODE=$(nvidia-smi -L | wc -l)
-DISTRIBUTED_ARGS="
-    --nproc_per_node $GPUS_PER_NODE
-    --rdzv_backend static
-"
-#TODO: Choose model: "FacebookAI/roberta-base", "allenai/biomed_roberta_base", "UCSD-VA-health/RadBERT-RoBERTa-4m", "models/RoBERTa-base-PM-M3-Voc-distill-align"
-MODEL="FacebookAI/roberta-base"
+#TODO: Choose model from constants.py > MODELS
+MODEL="roberta-base"
 TRAIN_DATA="StanfordAIMI/srrg_findings_impression"
-OUTPUT_DIR="roberta/roberta-base-4"
+OUTPUT_DIR="roberta-base-4"
 
-export HF_HOME="/home/users/jomoll/.cache"
+# Set the W&B project name and run name
+export WANDB_PROJECT="roberta_training"
+export WANDB_NAME="roberta-base"  # Custom W&B run name
+
 export PYTHONPATH=.
 
-torchrun $DISTRIBUTED_ARGS src/train_model.py \
-    --model_name_or_path $MODEL \
+python src/train_model.py \
+    --model $MODEL \
     --data_path "$TRAIN_DATA" \
     --output_dir "$OUTPUT_DIR" \
     --resume_from_checkpoint True \
@@ -28,7 +26,7 @@ torchrun $DISTRIBUTED_ARGS src/train_model.py \
     --evaluation_strategy "epoch" \
     --logging_steps 50 \
     --save_strategy "epoch" \
-    --save_total_limit 3 \
+    --save_total_limit 1 \
     --load_best_model_at_end True \
     --lr_scheduler_type "cosine" \
     --learning_rate 1e-4 \
@@ -36,6 +34,8 @@ torchrun $DISTRIBUTED_ARGS src/train_model.py \
     --adam_beta2 0.95 \
     --warmup_ratio 0.05 \
     --model_max_length 370 \
+    --generation_max_length 286 \
+    --generation_min_length 120 \
     --report_to "wandb" \
     --group_by_length True \
     --gradient_checkpointing False \

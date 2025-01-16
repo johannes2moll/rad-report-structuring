@@ -1,4 +1,6 @@
 import json
+from datasets import load_dataset
+
 from utils import get_lists, parse_args_calc
 from StructEval.structeval.StructEval import StructEval
 
@@ -50,8 +52,8 @@ def eval_impression(ref_impression_list, pred_impression_list):
 
 def main():
     args = parse_args_calc()
-
-    ref_findings_list, ref_impression_list, pred_findings_list, pred_impression_list = get_lists(args.pred_file, args.ref_file)
+ 
+    ref_findings_list, ref_impression_list, pred_findings_list, pred_impression_list = get_lists(args.pred_file, args.ref_data_path)
     
     print("Calculating metrics for the findings section...")
     findings_results = eval_findings(ref_findings_list, pred_findings_list)
