@@ -20,8 +20,10 @@ from transformers.integrations import deepspeed
 from transformers.trainer_pt_utils import LabelSmoother
 # Accelerate and Distributed Training
 from accelerate.utils import DistributedType
+from peft import LoraConfig, get_peft_model, prepare_model_for_kbit_training
+
 import constants
-from utils import load_and_preprocess_dataset, get_data_collator, load_model
+from utils import load_and_preprocess_dataset_llm, get_data_collator, load_llm_model
 
 IGNORE_TOKEN_ID = LabelSmoother.ignore_index
 
@@ -74,6 +76,18 @@ class TrainingArguments(transformers.TrainingArguments):
         default=True, metadata={"help": "Whether to save the model on the CPU instead of the GPU."}
     )
 
+@dataclass
+class LoraArguments:
+    lora_r: int = 32
+    lora_alpha: int = 32
+    lora_dropout: float = 0.1
+    lora_target_modules: List[str] = field(
+        default_factory=lambda: ["q_proj", "k_proj", "v_proj", "o_proj"]
+    )
+    lora_weight_path: str = ""
+    lora_bias: str = "none"
+    q_lora: bool = False
+
 local_rank = None
 
 def rank0_print(*args):
@@ -97,8 +111,8 @@ def make_supervised_data_module(tokenizer, data_args, max_len):
     """Prepare datasets and collator for supervised fine-tuning."""
     rank0_print("Loading and preprocessing data...")
     # Load and preprocess training and evaluation datasets
-    train_dataset = load_and_preprocess_dataset(data_args.data_path, tokenizer, split="train", max_len=max_len)
-    eval_dataset = load_and_preprocess_dataset(data_args.data_path, tokenizer, split="validate", max_len=max_len)
+    train_dataset = load_and_preprocess_dataset_llm(data_args.data_path, tokenizer, split="train", max_len=max_len)
+    eval_dataset = load_and_preprocess_dataset_llm(data_args.data_path, tokenizer, split="validate", max_len=max_len)
     # Create a data collator
     data_collator = get_data_collator(tokenizer)
 
@@ -162,8 +176,18 @@ def train():
         training_args.distributed_state.distributed_type = DistributedType.DEEPSPEED
 
     # Load model and tokenizer
-    model, tokenizer = load_model(constants.MODELS[model_args.model], task="train")
-
+    model, tokenizer = load_llm_model(constants.LLMS[model_args.model], cache_dir='.', task="train")
+    # load peft model
+    lora_config = LoraConfig(
+            r=16,
+            lora_alpha=32,
+            target_modules=["o_proj", "qkv_proj"],
+            lora_dropout=0.1,
+            bias="none",
+            task_type="CAUSAL_LM",
+        )
+    model = get_peft_model(model, lora_config)
+    model.print_trainable_parameters()
     # Define custom eval function for early-stopping
     def compute_metrics(pred):
         labels_ids = pred.label_ids

@@ -52,23 +52,40 @@ def eval_impression(ref_impression_list, pred_impression_list):
 
 def main():
     args = parse_args_calc()
- 
-    ref_findings_list, ref_impression_list, pred_findings_list, pred_impression_list = get_lists(args.pred_file, args.ref_data_path)
     
-    print("Calculating metrics for the findings section...")
-    findings_results = eval_findings(ref_findings_list, pred_findings_list)
-    print("Calculating metrics for the impression section...")
-    impression_results = eval_impression(ref_impression_list, pred_impression_list)
-    
+    ref_findings_mimic_list, ref_impression_mimic_list, pred_findings_mimic_list, pred_impression_mimic_list = get_lists(args.pred_file_mimic, args.ref_data_path, dataset_name="mimic", split="test_reviewed")
+    ref_findings_chexpert_list, ref_impression_chexpert_list, pred_findings_chexpert_list, pred_impression_chexpert_list = get_lists(args.pred_file_chexpert, args.ref_data_path, dataset_name="chexpert", split="test_reviewed")
+    try:
+        print("Calculating metrics for the MIMIC findings section...")
+        findings_mimic_results = eval_findings(ref_findings_mimic_list, pred_findings_mimic_list)
+        print("Calculating metrics for the MIMIC impression section...")
+        impression_mimic_results = eval_impression(ref_impression_mimic_list, pred_impression_mimic_list)
+    except: 
+        findings_mimic_results = None
+        impression_mimic_results = None
+    try:
+        print("Calculating metrics for the CheXpert findings section...")
+        findings_chexpert_results = eval_findings(ref_findings_chexpert_list, pred_findings_chexpert_list) 
+        print("Calculating metrics for the CheXpert impression section...")
+        impression_chexpert_results = eval_impression(ref_impression_chexpert_list, pred_impression_chexpert_list)
+    except: 
+        findings_chexpert_results = None
+        impression_chexpert_results = None
     # write to file
     with open(args.output_file, "w") as f:
-        json.dump({"findings": findings_results, "impression": impression_results}, f)
+        json.dump({"findings MIMIC": findings_mimic_results, "impression MIMIC": impression_mimic_results}, f)
+        json.dump({"findings CheXpert": findings_chexpert_results, "impression CheXpert": impression_chexpert_results}, f)
+
     print("Results saved to file:", args.output_file)
     # Print results
-    print("Findings Results:")
-    print(findings_results)
-    print("\nImpression Results:")
-    print(impression_results)
+    print("Findings MIMIC Results:")
+    print(findings_mimic_results)
+    print("\nImpression MIMIC Results:")
+    print(impression_mimic_results)
+    print("\nFindings CheXpert Results:")
+    print(findings_chexpert_results)
+    print("\nImpression CheXpert Results:")
+    print(impression_chexpert_results)
 
 if __name__ == "__main__":
     main()
