@@ -1,0 +1,15 @@
+datasets
+evaluate
+accelerate==0.28.0
+wandb
+torch==2.3
+transformers==4.39.0
+green_score
+rouge_score
+bert-score==0.3.13
+scikit-learn
+numpy<2
+f1chexbert
+protobuf
+scikit-learn
+f1chexbert
