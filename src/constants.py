@@ -33,6 +33,8 @@ MODELS = {
 }
 
 LLMS = {
+    "gpt2": "openai-community/gpt2",
+    "opt": "facebook/opt-350m",
     "llama-1b": "meta-llama/Llama-3.2-1B-Instruct",
     "llama-3b": "meta-llama/Llama-3.2-3B-Instruct",
     "llama-8b": "meta-llama/Llama-3.1-8B-Instruct",

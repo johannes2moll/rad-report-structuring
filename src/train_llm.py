@@ -80,13 +80,6 @@ class TrainingArguments(transformers.TrainingArguments):
 class LoraArguments:
     lora_r: int = 32
     lora_alpha: int = 32
-    lora_dropout: float = 0.1
-    lora_target_modules: List[str] = field(
-        default_factory=lambda: ["q_proj", "k_proj", "v_proj", "o_proj"]
-    )
-    lora_weight_path: str = ""
-    lora_bias: str = "none"
-    q_lora: bool = False
 
 local_rank = None
 
@@ -122,110 +115,56 @@ def make_supervised_data_module(tokenizer, data_args, max_len):
         "data_collator": data_collator,
     }
 
-
-class EarlyStoppingCallback(TrainerCallback):
-    def __init__(self, patience: int, threshold: float = 0.0):
-        self.patience = patience
-        self.threshold = threshold
-        self.best_score = None
-        self.patience_counter = 0
-
-    def on_evaluate(self, args, state, control, metrics, **kwargs):
-        # Retrieve the ROUGE-L score from the metrics (computed by compute_metrics)
-        current_score = metrics.get("eval_rougeL", None)
-        print(f"Current ROUGE-L score: {current_score}")
-        if current_score is None:
-            print("EarlyStopping: No ROUGE-L score found in evaluation metrics.")
-            return
-
-        # Initialize best_score if this is the first evaluation
-        if self.best_score is None:
-            self.best_score = current_score
-
-        # If the current score improves, reset patience counter and update best_score
-        elif current_score >= self.best_score + self.threshold:
-            print(f"EarlyStopping: ROUGE-L improved from {self.best_score} to {current_score}.")
-            self.best_score = current_score
-            self.patience_counter = 0
-
-        # If no improvement, increase patience counter
-        else:
-            self.patience_counter += 1
-            print(f"EarlyStopping: ROUGE-L did not improve. Patience counter increased to {self.patience_counter}.")
-
-        # If patience counter exceeds the allowed patience, stop training
-        if self.patience_counter >= self.patience:
-            print("EarlyStopping: Stopping early due to no improvement in ROUGE-L.")
-            control.should_training_stop = True
-
-
 def train():
     global local_rank
 
     parser = transformers.HfArgumentParser(
-        (ModelArguments, DataArguments, TrainingArguments)
+        (ModelArguments, DataArguments, TrainingArguments, LoraArguments)
     )
     (
         model_args,
         data_args,
         training_args,
+        lora_args,
     ) = parser.parse_args_into_dataclasses()
     training_args.hf_name = training_args.output_dir
     training_args.output_dir = constants.DIR_MODELS_TUNED+training_args.output_dir
-    if getattr(training_args, 'deepspeed', None):
-        training_args.distributed_state.distributed_type = DistributedType.DEEPSPEED
-
+    
     # Load model and tokenizer
     model, tokenizer = load_llm_model(constants.LLMS[model_args.model], cache_dir='.', task="train")
     # load peft model
-    lora_config = LoraConfig(
-            r=16,
-            lora_alpha=32,
-            target_modules=["o_proj", "qkv_proj"],
-            lora_dropout=0.1,
-            bias="none",
-            task_type="CAUSAL_LM",
-        )
-    model = get_peft_model(model, lora_config)
-    model.print_trainable_parameters()
-    # Define custom eval function for early-stopping
-    def compute_metrics(pred):
-        labels_ids = pred.label_ids
-        pred_ids = pred.predictions
-        # If predictions are logits, convert them to token IDs using argmax
-        if len(pred_ids.shape) > 2:
-            pred_ids = np.argmax(pred_ids, axis=-1)
-
-        
-        # Remove None and invalid token IDs (e.g., negative values)
-        pred_ids = [[token_id for token_id in pred if token_id is not None and token_id >= 0] for pred in pred_ids]
-
-        pred_str = tokenizer.batch_decode(pred_ids, skip_special_tokens=True)
-        labels_ids[labels_ids == -100] = tokenizer.pad_token_id
-        label_str = tokenizer.batch_decode(labels_ids, skip_special_tokens=True)
-
-        rouge = evaluate.load("rouge")
-        rouge_results = rouge.compute(predictions=pred_str, references=label_str)
-        return {
-            "eval_rouge1": rouge_results["rouge1"],
-            "eval_rouge2": rouge_results["rouge2"],
-            "eval_rougeL": rouge_results["rougeL"],
-        }
-
+    if model_args.model != "gpt2" and model_args.model != "opt":
+        if model_args.model == "phi3":
+            target_modules = ["o_proj", "qkv_proj"]
+        else:
+            target_modules= ["q_proj", "k_proj", "v_proj", "o_proj"]
+        lora_config = LoraConfig(
+                r=lora_args.lora_r,
+                lora_alpha=lora_args.lora_alpha,
+                target_modules=target_modules,
+                lora_dropout=0.1,
+                bias="none",
+                task_type="CAUSAL_LM",
+            )
+            
+        model = get_peft_model(model, lora_config)
+        print(model)
+        print("Chose target modules:",lora_config.target_modules)
+        print("Chose r value:",lora_config.r, "alpha value:",lora_config.lora_alpha)
+        model.print_trainable_parameters()
+    
     # Load data
     data_module = make_supervised_data_module(
     tokenizer=tokenizer,
     data_args=data_args,
     max_len=training_args.model_max_length,
     )
-    training_args.generate_config = transformers.GenerationConfig(decoder_start_token_id=model.config.decoder_start_token_id, max_length=training_args.generation_max_length, min_length=training_args.generation_min_length)
+    training_args.generate_config = transformers.GenerationConfig(decoder_start_token_id=model.config.decoder_start_token_id, max_new_tokens=training_args.generation_max_length, min_new_tokens=training_args.generation_min_length, max_length=None)
     trainer = Seq2SeqTrainer(
         model=model, tokenizer=tokenizer, args=training_args, 
         train_dataset=data_module["train_dataset"],
         eval_dataset=data_module["eval_dataset"],
         data_collator=data_module["data_collator"],
-        compute_metrics=compute_metrics,  # compute_metrics should return ROUGE scores
-        callbacks=[EarlyStoppingCallback(patience=3, threshold=0.01)]  # Set patience and threshold
     )
     trainer.train(resume_from_checkpoint=False)
     trainer.save_state()

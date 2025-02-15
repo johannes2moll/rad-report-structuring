@@ -61,27 +61,28 @@ def get_data_collator(tokenizer):
 def get_lists(prediction_file, reference_path, dataset_name="mimic", split="test_reviewed"):
     with open(prediction_file, "r") as f:
         predictions = json.load(f)
+    print(len(predictions), "predictions loaded")
     references = load_dataset(reference_path, split=split)
     selected_references = []
-    for i in range (len(predictions)):
+    for i in range (len(references)):
         if dataset_name in references["id"][i]:
             selected_references.append(references["structured_report"][i])
-    
+    print(len(selected_references), "references loaded")
     if len(predictions) < len(selected_references):
         print("Warning: Number of predictions is less than number of references.")
         print("Number of predictions:", len(predictions))
-        print("Number of references:", len(references))
+        print("Number of references:", len(selected_references))
         print("Truncating references to match number of predictions.")
-        references = references[:len(predictions)]
+        selected_references = selected_references[:len(predictions)]
 
     # for t5 models, reformat the predictions by adding newline characters
     try:
         if predictions[0].count("\n") == 0:
             predictions = reformat_radiology_output(predictions)
             print("Reformatted predictions for T5 models.")
-            print("Sample prediction:", predictions[0])
-    except:
-        pass
+            #print("Sample prediction:", predictions[0])
+    except Exception as e:
+        print("Error:", e)
 
     ref_findings_list = []
     ref_impression_list = []
@@ -145,7 +146,6 @@ def load_llm_model(model_name: str, cache_dir: str, task: str = "train"):
 
 def load_model(model_name: str, task: str = "train"):
     
-
     config = transformers.AutoConfig.from_pretrained(model_name, trust_remote_code=True)
     if re.search(r'(?i)bert', model_name):
         if task == "train": 
@@ -172,10 +172,10 @@ def load_model(model_name: str, task: str = "train"):
         tokenizer = transformers.AutoTokenizer.from_pretrained(model_name, trust_remote_code=True, padding_side="right", use_fast=False)
         print("Loaded AutoModelForCausalLM")
     
-    if task != "train":
-        tokenizer.pad_token = tokenizer.eos_token
-        model.config.pad_token_id = tokenizer.pad_token_id    
-
+    #if task != "train":
+    tokenizer.pad_token = tokenizer.eos_token
+    model.config.pad_token_id = tokenizer.pad_token_id   
+    
     return model, tokenizer
 
 def parse_args_calc():
@@ -214,6 +214,8 @@ def parse_args_run_llm():
     parser.add_argument("--batch_size", type=int, default=1, help="Batch size for inference")
     parser.add_argument("--max_gen_length", type=int, default=256, help="Maximum generation length for the model")
     parser.add_argument("--min_gen_length", type=int, default=1, help="Minimum generation length for the model")
+    parser.add_argument("--lora_r", type=int, default=8, help="LORA r parameter")
+    parser.add_argument("--lora_alpha", type=int, default=8, help="LORA alpha parameter")
     args = parser.parse_args()
     return args
 
@@ -251,7 +253,7 @@ def preprocess_batch_llm(batch, tokenizer: transformers.PreTrainedTokenizer, max
         # discrete prompting: null, prefix, and in-context examples (1,2,4)
         0: {},  # No prompt, control case
         1: {"prompt": f"\n{ICL_PROMPT_1}\n Input: "},
-        2: {"prompt": f"\n{ICL_PROMPT_2_MIMIC}\n Input: "},
+        2: {"prompt": f"\n{ICL_PROMPT_2_BOTH}\n Input: "},
         5: {"start_prefix": START_PREFIX},  # Instruction-only prompting
         10:{"both": f"{START_PREFIX}\n{ICL_PROMPT_1}\n Input: "},
     }
@@ -317,7 +319,7 @@ def reformat_radiology_output(output_list):
             except:
                 continue
         # Ensure newlines after colons and before bullet points
-        sample = sample.replace("-", "\n-")
+        sample = sample.replace("- ", "\n- ")
         # Ensure newlines before numbers 
         try: sample = sample.replace("1.", "\n1.")
         except: continue

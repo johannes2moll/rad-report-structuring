@@ -19,10 +19,10 @@ python src/train_llm.py \
     --resume_from_checkpoint True \
     --fp16 False \
     --bf16 True \
-    --num_train_epochs 10 \
-    --per_device_train_batch_size 32 \
-    --per_device_eval_batch_size 16 \
-    --gradient_accumulation_steps 4 \
+    --num_train_epochs 5 \
+    --per_device_train_batch_size 16 \
+    --per_device_eval_batch_size 1 \
+    --gradient_accumulation_steps 16 \
     --evaluation_strategy "epoch" \
     --logging_steps 50 \
     --save_strategy "epoch" \
@@ -41,6 +41,8 @@ python src/train_llm.py \
     --gradient_checkpointing False \
     --lazy_preprocess True \
     --dataloader_num_workers 1 \
+    --lora_r 8 \
+    --lora_alpha 8 \
 
     #--attn_implementation "flash_attention_2" \
     

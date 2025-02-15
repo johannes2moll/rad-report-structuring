@@ -14,6 +14,7 @@ from transformers import (
     Seq2SeqTrainer,
     TrainerCallback,
 )
+from torch.utils.data import DataLoader
 from rouge_score import rouge_scorer
 scorer = rouge_scorer.RougeScorer(['rouge1', 'rouge2', 'rougeL'], use_stemmer=True)
 from transformers.integrations import deepspeed
@@ -144,6 +145,18 @@ class EarlyStoppingCallback(TrainerCallback):
             print("EarlyStopping: Stopping early due to no improvement in ROUGE-L.")
             control.should_training_stop = True
 
+class CustomSeq2SeqTrainer(Seq2SeqTrainer):
+    def get_train_dataloader(self):
+        """Returns a DataLoader for the training dataset with shuffling enabled."""
+        return DataLoader(
+            self.train_dataset,
+            batch_size=self.args.train_batch_size,
+            shuffle=True,  # Force shuffling
+            collate_fn=self.data_collator,
+            drop_last=self.args.dataloader_drop_last,
+            num_workers=self.args.dataloader_num_workers,
+            pin_memory=self.args.dataloader_pin_memory,
+        )
 
 def train():
     global local_rank
@@ -194,8 +207,10 @@ def train():
     data_args=data_args,
     max_len=training_args.model_max_length,
     )
+    data_module["train_dataset"] = data_module["train_dataset"].remove_columns(['original_report', 'structured_report', 'findings_section', 'impression_section', 'history_section', 'technique_section', 'comparison_section', 'exam_type_section', 'image_paths', 'id'])
+    data_module["eval_dataset"] = data_module["eval_dataset"].remove_columns(['original_report', 'structured_report', 'findings_section', 'impression_section', 'history_section', 'technique_section', 'comparison_section', 'exam_type_section', 'image_paths', 'id'])
     training_args.generate_config = transformers.GenerationConfig(decoder_start_token_id=model.config.decoder_start_token_id, max_length=training_args.generation_max_length, min_length=training_args.generation_min_length)
-    trainer = Seq2SeqTrainer(
+    trainer = CustomSeq2SeqTrainer(
         model=model, tokenizer=tokenizer, args=training_args, 
         train_dataset=data_module["train_dataset"],
         eval_dataset=data_module["eval_dataset"],

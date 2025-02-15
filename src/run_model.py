@@ -43,7 +43,7 @@ def main():
             json.dump(predictions_mimic, f)
     except FileNotFoundError:
         os.makedirs(os.path.dirname(args.output_file_mimic))
-        with open(args.output_file, "w") as f:
+        with open(args.output_file_mimic, "w") as f:
             json.dump(predictions_mimic, f)   
     print(f"Predictions on MIMIC saved to {args.output_file_mimic}")
 
@@ -52,7 +52,7 @@ def main():
             json.dump(predictions_chexpert, f)
     except FileNotFoundError:
         os.makedirs(os.path.dirname(args.output_file_chexpert))
-        with open(args.output_file, "w") as f:
+        with open(args.output_file_chexpert, "w") as f:
             json.dump(predictions_chexpert, f)
     print(f"Predictions on CheXpert saved to {args.output_file_chexpert}")
     

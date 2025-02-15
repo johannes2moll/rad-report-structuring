@@ -1,0 +1,11 @@
+transformers==4.44.0
+tokenizer==0.19
+sentencepiece==0.2.0
+torch==2.3
+evaluate
+rouge_score
+accelerate
+wandb
+peft
+datasets
+protobuf

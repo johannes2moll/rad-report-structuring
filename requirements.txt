@@ -1,6 +1,0 @@
-datasets
-evaluate
-accelerate==0.28.0
-peft
-wandb
-sentencepiece

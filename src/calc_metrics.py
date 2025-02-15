@@ -1,5 +1,4 @@
 import json
-from datasets import load_dataset
 
 from utils import get_lists, parse_args_calc
 from StructEval.structeval.StructEval import StructEval
