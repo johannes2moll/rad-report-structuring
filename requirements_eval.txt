@@ -12,4 +12,3 @@ numpy<2
 f1chexbert
 protobuf
 scikit-learn
-f1chexbert

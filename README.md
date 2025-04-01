@@ -27,7 +27,7 @@ conda activate green
 pip install -r requirements_green.txt
 
 # Step 4: Prepare the Data and set HOME directory
-# Set DIR in constants.py
+# Set DIR and DIR_MODELS_TUNED in src/constants.py
 
 # Step 5: Train a Model
 conda activate srrrun
