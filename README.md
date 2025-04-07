@@ -6,7 +6,10 @@ Follow these steps to set up the environment and get the project running:
 
 ```bash
 # Step 1: Clone the Repository
-xxx
+git clone https://github.com/johannes2moll/rad-report-structuring.git
+# Optional: If submodule doesn't work (StructEval folder doesn't exist in src), clone submodule
+cd rad-report-structuring/src
+git clone https://github.com/jbdel/StructEval.git
 
 # Step 2: Create Conda Environments 
 # To reproduce all results, three different environments are needed (due to version collisions of green_score, radgraph, and transformers.EncoderDecoder)
