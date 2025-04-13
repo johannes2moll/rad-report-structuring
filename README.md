@@ -1,3 +1,16 @@
+## Structuring Radiology Reports: Challenging LLMs with Lightweight Models
+Radiology reports are critical for clinical decision-making but often lack a standardized format, limiting both human interpretability and machine learning (ML) applications. While large language models (LLMs) like GPT-4 can effectively reformat these reports, their proprietary nature, computational demands, and data privacy concerns limit clinical deployment. To address this challenge, we employed lightweight encoder-decoder models (<300M parameters), specifically T5 and BERT2BERT, to structure radiology reports from the MIMIC-CXR and CheXpert databases. We benchmarked our lightweight models against five open-source LLMs (3-8B parameters), which we adapted using in-context learning (ICL) and low-rank adaptation (LoRA) finetuning. We found that our best-performing lightweight model outperforms all ICL-adapted LLMs on a human-annotated test set across all metrics (BLEU: $212\%$, ROUGE-L: $63\%$, BERTScore: $59\%$, F1-RadGraph: $47\%$, GREEN: $27\%$, F1-SRRG-Bert: $43\%$). 
+While the overall best-performing LLM (Mistral-7B with LoRA) achieved a marginal 0.3\% improvement in GREEN Score over the lightweight model, this required $10\times$ more training and inference time, resulting in a significant increase in computational costs and carbon emissions. Our results highlight the advantages of lightweight models for sustainable and efficient deployment in resource-constrained clinical settings.
+
+### Task
+<img width="1024" alt="image" src="https://github.com/user-attachments/assets/c988cc9b-12f3-4fcb-93d6-a4737dbf7f27" />
+
+### Models
+![generation2](https://github.com/user-attachments/assets/65222bdb-7e44-4c21-a95a-56ccde323223)
+
+
+
+
 ## Setup
 
 ### Installation Steps
@@ -45,3 +58,14 @@ bash run_llm.sh
 # Step 8: Evaluate
 conda activate srreval
 bash calc_metrics.sh
+```
+
+## Citation
+```
+@misc{moll2025structuring,
+  title        = {Structuring Radiology Reports: Challenging LLMs with Lightweight Models},
+  author       = {Moll, Johannes and Fay, Louisa and Azhar, Asfandyar and Ostmeier, Sophie and Lueth, Tim and Gatidis, Sergios and Langlotz, Curtis P, Delbrouck, Jean-Benoit},
+  year         = {2025},
+  note         = {Under review},
+}
+```
