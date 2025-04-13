@@ -5,12 +5,23 @@ Radiology reports are critical for clinical decision-making but often lack a sta
 While the overall best-performing LLM (Mistral-7B with LoRA) achieved a marginal 0.3\% improvement in GREEN Score over the lightweight model, this required $10\times$ more training and inference time, resulting in a significant increase in computational costs and carbon emissions. Our results highlight the advantages of lightweight models for sustainable and efficient deployment in resource-constrained clinical settings.
 
 ### Task
-<img width="1024" alt="image" src="https://github.com/user-attachments/assets/c988cc9b-12f3-4fcb-93d6-a4737dbf7f27" />
+Automatically transform free-text chest X-ray radiology reports into a standardized, structured format.
+<p align="center">
+<img width="600" alt="image" src="https://github.com/user-attachments/assets/c988cc9b-12f3-4fcb-93d6-a4737dbf7f27" />
+</p>
 
 ### Models
-![generation2](https://github.com/user-attachments/assets/65222bdb-7e44-4c21-a95a-56ccde323223)
+<p align="center">
+<img src="https://github.com/user-attachments/assets/65222bdb-7e44-4c21-a95a-56ccde323223" alt="models" width="800"/>
+</p>
+<h3>Results</h3>
 
+<p align="center">
+  <img src="https://github.com/user-attachments/assets/50c70f2a-fdc9-4130-9f40-18129b48e7a0" alt="domainadapt2" width="45%" style="margin-right: 10px;"/>
+  <img src="https://github.com/user-attachments/assets/b513a01c-0edf-49a2-8fd9-9bc4f7a97994" alt="llmadaptation2" width="45%"/>
 
+<img src="https://github.com/user-attachments/assets/98066f08-7712-473a-9c0b-bb95457f32ee" alt="qualitative4" width="600"/>
+</p>
 
 
 ## Setup
