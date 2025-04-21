@@ -42,9 +42,9 @@ def generate_predictions(model, tokenizer, test_loader, device, max_gen_length: 
         attention_mask=batch["attention_mask"].to(device)
         with torch.no_grad():
             try:
-                generated_ids = model.generate(input_ids, attention_mask=attention_mask, max_new_tokens=max_gen_length, min_new_tokens= min_gen_length,decoder_start_token_id=model.config.decoder_start_token_id, num_beams=5, early_stopping=True, max_length=None,eos_token_id=tokenizer.eos_token_id)
+                generated_ids = model.generate(input_ids, attention_mask=attention_mask, max_new_tokens=max_gen_length, min_new_tokens= min_gen_length,decoder_start_token_id=model.config.decoder_start_token_id, num_beams=5, early_stopping=True, max_length=None)
             except:
-                generated_ids = model.generate(input_ids, max_new_tokens=max_gen_length, min_new_tokens=min_gen_length, num_beams=5, early_stopping=True, max_length=None,eos_token_id=tokenizer.eos_token_id)
+                generated_ids = model.generate(input_ids, max_new_tokens=max_gen_length, min_new_tokens=min_gen_length, num_beams=5, early_stopping=True, max_length=None)
         decoded_preds = tokenizer.batch_decode(generated_ids, skip_special_tokens=True)
         predictions.extend(decoded_preds)
         
@@ -141,8 +141,6 @@ def load_llm_model(model_name: str, cache_dir: str, task: str = "train"):
     tokenizer = transformers.AutoTokenizer.from_pretrained(model_name, cache_dir=cache_dir, trust_remote_code=True)
     #if task != "train":
     tokenizer.pad_token = tokenizer.eos_token
-    tokenizer.add_special_tokens({'eos_token': '<|end|>'})
-    model.resize_token_embeddings(len(tokenizer)) 
     return model, tokenizer
 
 def load_model(model_name: str, task: str = "train"):
