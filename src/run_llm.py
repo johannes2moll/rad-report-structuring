@@ -43,21 +43,21 @@ def main():
 
     # For auto-regressive models, remove the input text from the predictions
     for i, prediction in enumerate(predictions_mimic):
-        if '<|end|>' in prediction:
-            predictions_mimic[i] = prediction.split("Output:", 1)[-1].split("<|end|>")[0].strip()
-        elif '<|end_header|>' in prediction:
+        if '<|end_header|>' in prediction:
             predictions_mimic[i] = prediction.split("Output:", 1)[-1].split("<|end_header|>")[0].strip()
+        elif '<|end|>' in prediction:
+            predictions_mimic[i] = prediction.split("Output:", 1)[-1].split("<|end|>")[0].strip()
         else:
             predictions_mimic[i] = prediction.split("Output:", 1)[-1].strip()
 
         
     for i, prediction in enumerate(predictions_chexpert):
-        if '<|end|>' in prediction:
-            predictions_mimic[i] = prediction.split("Output:", 1)[-1].split("<|end|>")[0].strip()
-        elif '<|end_header|>' in prediction:
-            predictions_mimic[i] = prediction.split("Output:", 1)[-1].split("<|end_header|>")[0].strip()
+        if '<|end_header|>' in prediction:
+            predictions_chexpert[i] = prediction.split("Output:", 1)[-1].split("<|end_header|>")[0].strip()
+        elif '<|end|>' in prediction:
+            predictions_chexpert[i] = prediction.split("Output:", 1)[-1].split("<|end|>")[0].strip()
         else:
-            predictions_mimic[i] = prediction.split("Output:", 1)[-1].strip()
+            predictions_chexpert[i] = prediction.split("Output:", 1)[-1].strip()
 
         
 
