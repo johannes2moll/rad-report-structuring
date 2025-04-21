@@ -80,6 +80,7 @@ class TrainingArguments(transformers.TrainingArguments):
 class LoraArguments:
     lora_r: int = 32
     lora_alpha: int = 32
+    case_id: int = 0
 
 local_rank = None
 
@@ -132,26 +133,27 @@ def train():
     
     # Load model and tokenizer
     model, tokenizer = load_llm_model(constants.LLMS[model_args.model], cache_dir='.', task="train")
-    # load peft model
-    if model_args.model != "gpt2" and model_args.model != "opt":
-        if model_args.model == "phi3":
-            target_modules = ["o_proj", "qkv_proj"]
-        else:
-            target_modules= ["q_proj", "k_proj", "v_proj", "o_proj"]
-        lora_config = LoraConfig(
-                r=lora_args.lora_r,
-                lora_alpha=lora_args.lora_alpha,
-                target_modules=target_modules,
-                lora_dropout=0.1,
-                bias="none",
-                task_type="CAUSAL_LM",
-            )
-            
-        model = get_peft_model(model, lora_config)
-        print(model)
-        print("Chose target modules:",lora_config.target_modules)
-        print("Chose r value:",lora_config.r, "alpha value:",lora_config.lora_alpha)
-        model.print_trainable_parameters()
+    if lora_args.case_id == 0:
+        # load peft model
+        if model_args.model != "gpt2" and model_args.model != "opt":
+            if model_args.model == "phi3":
+                target_modules = ["o_proj", "qkv_proj"]
+            else:
+                target_modules= ["q_proj", "k_proj", "v_proj", "o_proj"]
+            lora_config = LoraConfig(
+                    r=lora_args.lora_r,
+                    lora_alpha=lora_args.lora_alpha,
+                    target_modules=target_modules,
+                    lora_dropout=0.1,
+                    bias="none",
+                    task_type="CAUSAL_LM",
+                )
+        
+            model = get_peft_model(model, lora_config)
+            print(model)
+            print("Chose target modules:",lora_config.target_modules)
+            print("Chose r value:",lora_config.r, "alpha value:",lora_config.lora_alpha)
+            model.print_trainable_parameters()
     
     # Load data
     data_module = make_supervised_data_module(

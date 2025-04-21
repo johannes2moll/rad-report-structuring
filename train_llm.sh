@@ -5,6 +5,7 @@ module load cuda/12.6.1
 MODEL="mistral-7b"
 TRAIN_DATA="StanfordAIMI/srrg_findings_impression"
 OUTPUT_DIR="mistral-7b"
+CASE_ID=0
 
 # Set the W&B project name and run name
 export WANDB_PROJECT="llm_training"
@@ -16,6 +17,7 @@ python src/train_llm.py \
     --model $MODEL \
     --data_path "$TRAIN_DATA" \
     --output_dir "$OUTPUT_DIR" \
+    --case_id $CASE_ID \
     --resume_from_checkpoint True \
     --fp16 False \
     --bf16 True \
@@ -26,7 +28,7 @@ python src/train_llm.py \
     --evaluation_strategy "epoch" \
     --logging_steps 50 \
     --save_strategy "epoch" \
-    --save_total_limit 1 \
+    --save_total_limit 5 \
     --load_best_model_at_end True \
     --lr_scheduler_type "cosine" \
     --learning_rate 1e-4 \
