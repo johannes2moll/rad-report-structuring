@@ -4,7 +4,7 @@ module load cuda/12.6.1
 #TODO: Choose model from constants.py > MODELS
 MODEL="roberta-base"
 TRAIN_DATA="StanfordAIMI/srrg_findings_impression"
-OUTPUT_DIR="roberta-base-4"
+OUTPUT_DIR="roberta-base-1"
 
 # Set the W&B project name and run name
 export WANDB_PROJECT="roberta_training"

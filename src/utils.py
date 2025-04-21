@@ -34,6 +34,7 @@ def extract_sections(report):
 
 def generate_predictions(model, tokenizer, test_loader, device, max_gen_length: int, min_gen_length: int,):
     model.eval()
+    eos_token_id = tokenizer.convert_tokens_to_ids("<|end|>")
     predictions = []
     # Initialize tqdm progress bar, setting the total number of batches
     progress_bar = tqdm(test_loader, desc="Generating predictions", unit="batch")
@@ -42,9 +43,9 @@ def generate_predictions(model, tokenizer, test_loader, device, max_gen_length: 
         attention_mask=batch["attention_mask"].to(device)
         with torch.no_grad():
             try:
-                generated_ids = model.generate(input_ids, attention_mask=attention_mask, max_new_tokens=max_gen_length, min_new_tokens= min_gen_length,decoder_start_token_id=model.config.decoder_start_token_id, num_beams=5, early_stopping=True, max_length=None)
+                generated_ids = model.generate(input_ids, attention_mask=attention_mask, max_new_tokens=max_gen_length, min_new_tokens= min_gen_length,decoder_start_token_id=model.config.decoder_start_token_id, num_beams=5, early_stopping=True, max_length=None,eos_token_id=eos_token_id)
             except:
-                generated_ids = model.generate(input_ids, max_new_tokens=max_gen_length, min_new_tokens=min_gen_length, num_beams=5, early_stopping=True, max_length=None)
+                generated_ids = model.generate(input_ids, max_new_tokens=max_gen_length, min_new_tokens=min_gen_length, num_beams=5, early_stopping=True, max_length=None,eos_token_id=eos_token_id)
         decoded_preds = tokenizer.batch_decode(generated_ids, skip_special_tokens=True)
         predictions.extend(decoded_preds)
         
@@ -313,7 +314,7 @@ def reformat_radiology_output(output_list):
 
         # Split into sections based on known headers or patterns
         sections = ["History:", "Technique:", "Comparison:", "Findings:", "Impression:"]
-        organs = ['Lungs and Airways:', 'Musculoskeletal and Chest Wall:','Cardiovascular:', 'Tubes, Catheters, and Support Devices:', 'Abdominal:','Pleura:','Other:','Hila and Mediastinum:']
+        organs = ['Lungs and Airways:', 'Musculoskeletal and Chest Wall:','Cardiovascular:','Tubes, Catheters, and Support Devices:','Abdominal:','Pleura:','Other:','Hila and Mediastinum:']
         for section in sections:
             sample = sample.replace(section, f"\n{section}")
         for organ in organs:

@@ -2,13 +2,13 @@
 module load cuda/12.6.1 
 
 #TODO: Choose model from constants.py > MODELS
-MODEL="phi3"
+MODEL="mistral-7b"
 TRAIN_DATA="StanfordAIMI/srrg_findings_impression"
-OUTPUT_DIR="phi3"
+OUTPUT_DIR="mistral-7b"
 
 # Set the W&B project name and run name
-export WANDB_PROJECT="roberta_training"
-export WANDB_NAME="phi3"  # Custom W&B run name
+export WANDB_PROJECT="llm_training"
+export WANDB_NAME="mistral-7b"  # Custom W&B run name
 
 export PYTHONPATH=.
 

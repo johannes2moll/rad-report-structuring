@@ -39,8 +39,14 @@ def main():
 
 
     # For auto-regressive models, remove the input text from the predictions
-    predictions_mimic =[prediction.rsplit("Output:", 1)[-1].strip() for prediction in predictions_mimic]
-    predictions_chexpert =[prediction.rsplit("Output:", 1)[-1].strip() for prediction in predictions_chexpert]
+    predictions_mimic = [
+        prediction.split("Output:", 1)[-1].split("<|end|>")[0].strip()
+        for prediction in predictions_mimic
+        ]   
+    predictions_chexpert =[
+        prediction.split("Output:", 1)[-1].split("<|end|>")[0].strip() 
+        for prediction in predictions_chexpert
+        ]
 
     print("Sample prediction:", predictions_mimic[0])
 
