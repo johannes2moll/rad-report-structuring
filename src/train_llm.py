@@ -101,12 +101,12 @@ def safe_save_model_for_hf_trainer(trainer: transformers.Trainer, tokenizer, out
     tokenizer.save_pretrained(output_dir)
     print("pushed model to hf hub: ", output_dir)
 
-def make_supervised_data_module(tokenizer, data_args, max_len):
+def make_supervised_data_module(tokenizer, data_args, max_len, case_id=0):
     """Prepare datasets and collator for supervised fine-tuning."""
     rank0_print("Loading and preprocessing data...")
     # Load and preprocess training and evaluation datasets
-    train_dataset = load_and_preprocess_dataset_llm(data_args.data_path, tokenizer, split="train", max_len=max_len)
-    eval_dataset = load_and_preprocess_dataset_llm(data_args.data_path, tokenizer, split="validate", max_len=max_len)
+    train_dataset = load_and_preprocess_dataset_llm(data_args.data_path, tokenizer, split="train", max_len=max_len, case_id=case_id)
+    eval_dataset = load_and_preprocess_dataset_llm(data_args.data_path, tokenizer, split="validate", max_len=max_len, case_id=case_id)
     # Create a data collator
     data_collator = get_data_collator(tokenizer)
 
@@ -169,6 +169,7 @@ def train():
     tokenizer=tokenizer,
     data_args=data_args,
     max_len=training_args.model_max_length,
+    case_id=lora_args.case_id,
     )
     training_args.generate_config = transformers.GenerationConfig(decoder_start_token_id=model.config.decoder_start_token_id, max_new_tokens=training_args.generation_max_length, min_new_tokens=training_args.generation_min_length, max_length=None)
     trainer = FixedSeq2SeqTrainer(

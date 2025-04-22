@@ -11,7 +11,7 @@ if not os.path.exists(DIR_DATA):
     DIR_DATA = "data/"
 
 # TODO: set directory of tuned models. created automatically
-DIR_MODELS_TUNED = "/path/where/models/are/saved/"  # tuned models
+DIR_MODELS_TUNED = "models_tuned/"  # tuned models
 
 # directory of physionet's pre-trained models (clin-t5, clin-t5-sci) and facebook's RoBERTa-base-PM-M3-Voc-distill-align
 # download here: https://www.physionet.org/content/clinical-t5/1.0.0/
