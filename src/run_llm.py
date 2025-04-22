@@ -19,7 +19,7 @@ def main():
         model, tokenizer = load_llm_model(config.base_model_name_or_path, args.cache_dir, task="run")
         model = PeftModel.from_pretrained(model, peft_path)
     elif args.case_id == 100: # model is finetuned 
-        model_path = constants.DIR_MODELS_TUNED + args.model
+        model_path = args.model
         model, tokenizer = load_llm_model(model_path,args.cache_dir, task="run")
     else: # model is not finetuned and just prompted
         model, tokenizer = load_llm_model(constants.LLMS[args.model], args.cache_dir, task="run")

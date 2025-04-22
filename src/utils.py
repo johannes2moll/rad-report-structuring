@@ -258,6 +258,7 @@ def preprocess_batch_llm(batch, tokenizer: transformers.PreTrainedTokenizer, max
         2: {"prompt": f"\n{ICL_PROMPT_2_BOTH}\n Input: "},
         5: {"start_prefix": START_PREFIX},  # Instruction-only prompting
         10:{"both": f"{START_PREFIX}\n{ICL_PROMPT_1}\n Input: "},
+        105: {"start_prefix": START_PREFIX},  # lora with prefix
     }
     # Validate fields
     original = batch.get("original_report", [])
@@ -287,10 +288,21 @@ def preprocess_batch_llm(batch, tokenizer: transformers.PreTrainedTokenizer, max
     else: 
         system_message = "<|system|><|end|> <|user|>"
         # Combine input (original) and output (structured) for training
-        input_text = [
-            system_message + f"{original}<|end|> \n<|assistant|> Output: " + f"{structured}" + "<|end|>"
-            for original, structured in zip(original, structured)
-        ]
+        if case_id in cases and 'start_prefix' in cases[case_id]:
+            # Apply instruction-based prompt (zero-shot style)
+            input_text = [cases[case_id]['start_prefix'] + f"{original}" + "\n Output: " + f"{structured}" + "<|end|>" for original, structured in zip(original, structured)]
+            
+        elif case_id in cases and 'prompt' in cases[case_id]:
+            # Apply in-context learning prompt (few-shot style)
+            input_text = [cases[case_id]['prompt'] + f"{original}" + "\n Output: " + f"{structured}" + "<|end|>" for original, structured in zip(original, structured)]
+            
+        elif case_id in cases and 'both' in cases[case_id]:
+            # Apply both instruction and in-context learning prompts
+            input_text = [cases[case_id]['both'] + f"{original}" + "\n Output: " + f"{structured}" + "<|end|>" for original, structured in zip(original, structured)]
+        else:
+            input_text = ["<|system|> You are a radiology expert.<|end|> <|user|>"+f"{original}" +"<|end|> \n<|assistant|> Output: " + f"{structured}" + "<|end|>"
+            for original, structured in zip(original, structured)]
+        
         # Tokenize input text
         inputs = tokenizer(input_text, padding="max_length", truncation=True, max_length=max_len, return_tensors="pt")
 

@@ -116,6 +116,15 @@ def make_supervised_data_module(tokenizer, data_args, max_len):
         "data_collator": data_collator,
     }
 
+class FixedSeq2SeqTrainer(Seq2SeqTrainer):
+    def compute_loss(self, model, inputs, return_outputs=False, **kwargs):
+        # Move all tensor inputs to the model's device
+        inputs = {k: v.to(model.device) if hasattr(v, "to") else v for k, v in inputs.items()}
+        
+        outputs = model(**inputs)
+        loss = outputs.loss
+
+        return (loss, outputs) if return_outputs else loss
 def train():
     global local_rank
 
@@ -133,7 +142,7 @@ def train():
     
     # Load model and tokenizer
     model, tokenizer = load_llm_model(constants.LLMS[model_args.model], cache_dir='.', task="train")
-    if lora_args.case_id == 0:
+    if lora_args.case_id == 0 or lora_args.case_id == 105:
         # load peft model
         if model_args.model != "gpt2" and model_args.model != "opt":
             if model_args.model == "phi3":
@@ -162,13 +171,15 @@ def train():
     max_len=training_args.model_max_length,
     )
     training_args.generate_config = transformers.GenerationConfig(decoder_start_token_id=model.config.decoder_start_token_id, max_new_tokens=training_args.generation_max_length, min_new_tokens=training_args.generation_min_length, max_length=None)
-    trainer = Seq2SeqTrainer(
-        model=model, tokenizer=tokenizer, args=training_args, 
-        train_dataset=data_module["train_dataset"],
-        eval_dataset=data_module["eval_dataset"],
-        data_collator=data_module["data_collator"],
-    )
-    trainer.train(resume_from_checkpoint=False)
+    trainer = FixedSeq2SeqTrainer(
+    model=model,
+    tokenizer=tokenizer,
+    args=training_args, 
+    train_dataset=data_module["train_dataset"],
+    eval_dataset=data_module["eval_dataset"],
+    data_collator=data_module["data_collator"],
+)
+    trainer.train(resume_from_checkpoint=False) 
     trainer.save_state()
 
     # Optional: print one training sample
