@@ -35,7 +35,7 @@ python src/train_llm.py \
     --weight_decay 0.1 \
     --adam_beta2 0.95 \
     --warmup_ratio 0.05 \
-    --model_max_length 512 \
+    --model_max_length 1024 \
     --generation_max_length 286 \
     --generation_min_length 120 \
     --report_to "wandb" \

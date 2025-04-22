@@ -291,18 +291,19 @@ def preprocess_batch_llm(batch, tokenizer: transformers.PreTrainedTokenizer, max
         if case_id in cases and 'start_prefix' in cases[case_id]:
             # Apply instruction-based prompt (zero-shot style)
             input_text = [cases[case_id]['start_prefix'] + f"{original}" + "\n Output: " + f"{structured}" + "<|end|>" for original, structured in zip(original, structured)]
-            
+            prompt_text = [cases[case_id]['start_prefix'] + f"{original}" + "\n Output: " for original in original]
         elif case_id in cases and 'prompt' in cases[case_id]:
             # Apply in-context learning prompt (few-shot style)
             input_text = [cases[case_id]['prompt'] + f"{original}" + "\n Output: " + f"{structured}" + "<|end|>" for original, structured in zip(original, structured)]
-            
+            prompt_text = [cases[case_id]['prompt'] + f"{original}" + "\n Output: " for original in original]
         elif case_id in cases and 'both' in cases[case_id]:
             # Apply both instruction and in-context learning prompts
             input_text = [cases[case_id]['both'] + f"{original}" + "\n Output: " + f"{structured}" + "<|end|>" for original, structured in zip(original, structured)]
+            prompt_text = [cases[case_id]['both'] + f"{original}" + "\n Output: " for original in original]
         else:
             input_text = ["<|system|> You are a radiology expert.<|end|> <|user|>"+f"{original}" +"<|end|> \n<|assistant|> Output: " + f"{structured}" + "<|end|>"
             for original, structured in zip(original, structured)]
-        
+            prompt_text = ["<|system|> You are a radiology expert.<|end|> <|user|>"+f"{original}" +"<|end|> \n<|assistant|> Output: " for original in original]
         # Tokenize input text
         inputs = tokenizer(input_text, padding="max_length", truncation=True, max_length=max_len, return_tensors="pt")
 
@@ -310,8 +311,7 @@ def preprocess_batch_llm(batch, tokenizer: transformers.PreTrainedTokenizer, max
         inputs["labels"] = inputs["input_ids"].clone()
 
         # Mask prompt tokens with -100 in the labels
-        for i, original_text in enumerate(original):
-            prompt_text = system_message + f"{original_text}<|end|> \n<|assistant|> Output: "
+        for i, prompt_text in enumerate(prompt_text):
             prompt_length = len(tokenizer(prompt_text, truncation=True, max_length=max_len)["input_ids"])
             inputs["labels"][i, :prompt_length] = -100  # Mask prompt tokens
     return inputs
