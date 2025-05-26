@@ -17,8 +17,10 @@ Automatically transform free-text chest X-ray radiology reports into a standardi
 <h3>Results</h3>
 
 <p align="center">
-  <img src="https://github.com/user-attachments/assets/50c70f2a-fdc9-4130-9f40-18129b48e7a0" alt="domainadapt2" width="45%" style="margin-right: 10px;"/>
-  <img src="https://github.com/user-attachments/assets/b513a01c-0edf-49a2-8fd9-9bc4f7a97994" alt="llmadaptation2" width="45%"/>
+  <img src="https://github.com/user-attachments/assets/8ff7dfea-034f-4aa5-9ee8-12cb12af6dd2" alt="domainadapt2" width="45%" style="margin-right: 10px;"/>
+
+  <img src="https://github.com/user-attachments/assets/a5abe771-70fc-4194-bb33-75ba06235174" alt="llmadaptation2" width="45%"/>
+
 
 <img src="https://github.com/user-attachments/assets/98066f08-7712-473a-9c0b-bb95457f32ee" alt="qualitative4" width="600"/>
 </p>
