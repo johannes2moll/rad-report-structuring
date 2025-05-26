@@ -1,8 +1,42 @@
 ## Structuring Radiology Reports: Challenging LLMs with Lightweight Models
 
 ### Project Overview
-Radiology reports are critical for clinical decision-making but often lack a standardized format, limiting both human interpretability and machine learning (ML) applications. While large language models (LLMs) like GPT-4 can effectively reformat these reports, their proprietary nature, computational demands, and data privacy concerns limit clinical deployment. To address this challenge, we employed lightweight encoder-decoder models (<300M parameters), specifically T5 and BERT2BERT, to structure radiology reports from the MIMIC-CXR and CheXpert databases. We benchmarked our lightweight models against five open-source LLMs (3-8B parameters), which we adapted using in-context learning (ICL) and low-rank adaptation (LoRA) finetuning. We found that our best-performing lightweight model outperforms all ICL-adapted LLMs on a human-annotated test set across all metrics (BLEU: 212%, ROUGE-L: 63%, BERTScore: 59%, F1-RadGraph: 47%, GREEN: 27%, F1-SRRG-Bert: 43%). 
-While the overall best-performing LLM (Mistral-7B with LoRA) achieved a marginal 0.3% improvement in GREEN Score over the lightweight model, this required $10\times$ more training and inference time, resulting in a significant increase in computational costs and carbon emissions. Our results highlight the advantages of lightweight models for sustainable and efficient deployment in resource-constrained clinical settings.
+Radiology reports are critical for clinical
+decision-making but often lack a standard-
+ized format, limiting both human interpretabil-
+ity and machine learning (ML) applications.
+While large language models (LLMs) have
+shown strong capabilities in reformatting clini-
+cal text, their high computational requirements,
+lack of transparency, and data privacy con-
+cerns hinder practical deployment. To ad-
+dress these challenges, we explore lightweight
+encoder-decoder models (<300M parame-
+ters)—specifically T5 and BERT2BERT—for
+structuring radiology reports from the MIMIC-
+CXR and CheXpert Plus datasets. We bench-
+mark these models against eight open-source
+LLMs (1B–70B parameters), adapted using
+prefix prompting, in-context learning (ICL),
+and low-rank adaptation (LoRA) finetuning.
+Our best-performing lightweight model out-
+performs all LLMs adapted using prompt-
+based techniques on a human-annotated test set.
+While some LoRA-finetuned LLMs achieve
+modest gains over the lightweight model on
+the Findings section (BLEU 6.4%, ROUGE-L
+4.8%, BERTScore 3.6%, F1-RadGraph 1.1%,
+GREEN 3.6%, and F1-SRR-BERT 4.3%),
+these improvements come at the cost of sub-
+stantially greater computational resources. For
+example, LLaMA-3-70B incurred more than
+400 times the inference time, cost, and car-
+bon emissions compared to the lightweight
+model. These results underscore the poten-
+tial of lightweight, task-specific models as sus-
+tainable and privacy-preserving solutions for
+structuring clinical text in resource-constrained
+healthcare settings.
 
 ### Task
 Automatically transform free-text chest X-ray radiology reports into a standardized, structured format.
