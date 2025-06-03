@@ -1,4 +1,18 @@
-## Structuring Radiology Reports: Challenging LLMs with Lightweight Models
+<!-- markdownlint-disable first-line-h1 -->
+<!-- markdownlint-disable html -->
+
+<div align="center">
+<h1>
+  Structuring Radiology Reports: Challenging LLMs with Lightweight Models
+</h1>
+</div>
+
+<p align="center">
+📝 <a href="https://arxiv.org/abs/2506.00200" target="_blank">Paper</a> • 🤗 <a href="https://huggingface.co/collections/StanfordAIMI/structuring-with-lightweight-models-683e9eb895d42e04112fad88" target="_blank">Hugging Face</a> • 🧩 <a href="https://github.com/jomoll/rad-report-structuring" target="_blank">Github</a> • 🪄 <a href="https://stanford-aimi.github.io/structuring.html" target="_blank">Project</a>
+</p>
+
+<div align="center">
+</div>
 
 ### Project Overview
 Radiology reports are critical for clinical
