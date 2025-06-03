@@ -123,12 +123,15 @@ conda activate srreval
 bash calc_metrics.sh
 ```
 
-## Citation
+## ✏️ Citation
+
 ```
-@misc{moll2025structuring,
-  title        = {Structuring Radiology Reports: Challenging LLMs with Lightweight Models},
-  author       = {Moll, Johannes and Fay, Louisa and Azhar, Asfandyar and Ostmeier, Sophie and Lueth, Tim and Gatidis, Sergios and Langlotz, Curtis P, Delbrouck, Jean-Benoit},
-  year         = {2025},
-  note         = {Under review},
+@article{structuring-2025,
+  title={Structuring Radiology Reports: Challenging LLMs with Lightweight Models},
+  author={Moll, Johannes and Fay, Louisa and Azhar, Asfandyar and Ostmeier, Sophie and Lueth, Tim and Gatidis, Sergios and Langlotz, Curtis and Delbrouck, Jean-Benoit},
+  journal={arXiv preprint arXiv:2506.00200},
+  url={https://arxiv.org/abs/2506.00200},
+  year={2025}
 }
+
 ```
