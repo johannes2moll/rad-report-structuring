@@ -80,6 +80,12 @@ Automatically transform free-text chest X-ray radiology reports into a standardi
 ---
 
 ### Example Usage
+**Required Packages**
+
+```bash
+pip install transformers==4.44.0
+pip install torch==2.3
+```
 
 ```python
 import io
@@ -169,6 +175,7 @@ bash calc_metrics.sh
 ```
 
 ## ✏️ Citation
+If you find this work useful, please cite:
 
 ```
 @article{structuring-2025,
