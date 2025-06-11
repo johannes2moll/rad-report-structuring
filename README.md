@@ -55,24 +55,69 @@ healthcare settings.
 ### Task
 Automatically transform free-text chest X-ray radiology reports into a standardized, structured format.
 <p align="center">
-<img width="600" alt="image" src="https://github.com/user-attachments/assets/c988cc9b-12f3-4fcb-93d6-a4737dbf7f27" />
+<img width="600" alt="image" src="https://github.com/user-attachments/assets/ff37c096-6376-4535-aceb-9c9d2d095235" />
 </p>
 
 ### Models
-<p align="center">
-<img src="https://github.com/user-attachments/assets/65222bdb-7e44-4c21-a95a-56ccde323223" alt="models" width="800"/>
-</p>
-<h3>Results</h3>
+| Model    | Variant      | HuggingFace Link |
+|----------|--------------|-------------------|
+| BERT2BERT | RoBERTa-base | [🤗 StanfordAIMI/SRR-BERT2BERT-RoBERTa-base](https://huggingface.co/StanfordAIMI/SRR-BERT2BERT-RoBERTa-base) |
+|          | RoBERTa-biomed | [🤗 StanfordAIMI/SRR-BERT2BERT-RoBERTa-biomed](https://huggingface.co/StanfordAIMI/SRR-BERT2BERT-RoBERTa-biomed) |
+|          | RoBERTa-PM-M3 | [🤗 StanfordAIMI/SRR-BERT2BERT-RoBERTa-PM-M3](https://huggingface.co/StanfordAIMI/SRR-BERT2BERT-RoBERTa-PM-M3) |
+|          | RadBERT      | [🤗 StanfordAIMI/SRR-BERT2BERT-RadBERT](https://huggingface.co/StanfordAIMI/SRR-BERT2BERT-RadBERT) |
+| T5       | T5-Base      | [🤗 StanfordAIMI/SRR-T5-Base](https://huggingface.co/StanfordAIMI/SRR-T5-Base) |
+|          | Flan-T5      | [🤗 StanfordAIMI/SRR-T5-Flan](https://huggingface.co/StanfordAIMI/SRR-StanfordAIMI/SRR-T5-Flan) |
+|          | SciFive      | [🤗 StanfordAIMI/SRR-T5-SciFive](https://huggingface.co/StanfordAIMI/SRR-T5-SciFive) |
 
-<p align="center">
-  <img src="https://github.com/user-attachments/assets/8ff7dfea-034f-4aa5-9ee8-12cb12af6dd2" alt="domainadapt2" width="45%" style="margin-right: 10px;"/>
+---
 
-  <img src="https://github.com/user-attachments/assets/a5abe771-70fc-4194-bb33-75ba06235174" alt="llmadaptation2" width="45%"/>
+### Dataset
 
+| Dataset       | HuggingFace Link |
+| -------------- | ---------------- |
+| SRRG-Findings  | [🤗 StanfordAIMI/srrg_findings](https://huggingface.co/datasets/StanfordAIMI/srrg_findings) |
 
-<img src="https://github.com/user-attachments/assets/98066f08-7712-473a-9c0b-bb95457f32ee" alt="qualitative4" width="600"/>
-</p>
+---
 
+### Example Usage
+
+```python
+import io
+import torch
+from transformers import EncoderDecoderModel, AutoTokenizer
+
+# Step 1: Setup
+model_name = "StanfordAIMI/SRR-BERT2BERT-RoBERTa-base"
+device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+
+# Step 2: Load Processor and Model
+model = EncoderDecoderModel.from_pretrained(model_name).to(device)
+tokenizer = AutoTokenizer.from_pretrained(model_name, trust_remote_code=True, padding_side="right", use_fast=False)
+model.config.decoder_start_token_id = tokenizer.cls_token_id
+model.config.bos_token_id = tokenizer.cls_token_id
+model.eval()
+
+# Step 3: Inference (example from MIMIC-CXR dataset)
+input_text = "CHEST RADIOGRAPH PERFORMED ON ___  ...  Impression: Limited exam with small bilateral effusions, cardiomegaly, and possible mild interstitial edema."
+inputs = tokenizer(input_text, padding="max_length", truncation=True, max_length=512, return_tensors="pt")
+inputs["attention_mask"] = inputs["input_ids"].ne(tokenizer.pad_token_id)
+input_ids = inputs['input_ids'].to(device)
+attention_mask = inputs["attention_mask"].to(device)
+
+generated_ids = model.generate(
+    input_ids,
+    attention_mask=attention_mask,
+    max_new_tokens=286,
+    min_new_tokens=120,
+    decoder_start_token_id=model.config.decoder_start_token_id,
+    num_beams=5,
+    early_stopping=True,
+    max_length=None
+)[0]
+
+decoded = tokenizer.decode(generated_ids, skip_special_tokens=True)
+print(decoded)
+```
 
 ## Setup
 
